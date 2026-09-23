@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Painel de Ocorrências</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+            max-width: 500px;
+            width: 100%;
+        }
+
+        h1 {
+            color: #333333;
+            margin-bottom: 20px;
+            font-size: 22px;
+            text-align: center;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: bold;
+            color: #555;
+        }
+
+        select, input, textarea {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+
+        .btn-submit {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            width: 100%;
+            transition: background-color 0.3s ease;
+        }
+
+        .btn-submit:hover {
+            background-color: #0056b3;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 15px;
+            color: #666;
+            text-decoration: none;
+        }
+
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Novo Relatório de Erro</h1>
+        
+        <form id="formRelatorio">
+            <div class="form-group">
+                <label for="numero">Selecione o Parquímetro:</label>
+                <select id="numero" name="numero" required>
+                    <option value="">Selecione...</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="tipoErro">Tipo de Erro:</label>
+                <select id="tipoErro" name="tipoErro" required>
+                    <option value="">Selecione o erro...</option>
+                    <option value="Porta Aberta (EE)">Porta Aberta (EE)</option>
+                    <option value="Bateria Baixa (EC)">Bateria Baixa (EC)</option>
+                    <option value="Problema na Impressora (E0)">Problema na Impressora (E0)</option>
+                    <option value="Falta de Papel (E1)">Falta de Papel (E1)</option>
+                    <option value="Erro no Relógio (E2)">Erro no Relógio (E2)</option>
+                    <option value="Coleta de Dados (E3)">Coleta de Dados (E3)</option>
+                    <option value="Problema na Devolução de moedas (E4)">Problema na Devolução de moedas (E4)</option>
+                    <option value="Problema no Recolhimento de moedas (E5)">Problema no Recolhimento de moedas (E5)</option>
+                    <option value="Capacidade Máxima do Cofre (E6)">Capacidade Máxima do Cofre (E6)</option>
+                    <option value="Cofre Aberto ou Violado (E7)">Cofre Aberto ou Violado (E7)</option>
+                    <option value="Cassete de Moedas Ausente (E8)">Cassete de Moedas Ausente (E8)</option>
+                    <option value="Travamento do Sensor de Moedas (E9)">Travamento do Sensor de Moedas (E9)</option>
+                    <option value="Travamento no Sensor do Cartão (EA)">Travamento no Sensor do Cartão (EA)</option>
+                    <option value="Envio de Dados (ED)">Envio de Dados (ED)</option>
+                </select>
+            </div>
+
+            <button type="submit" class="btn-submit">Enviar Relatório</button>
+        </form>
+
+        <a href="index.html" class="back-link">Voltar ao Painel Inicial</a>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('usuarioLogado')) {
+        window.location.href = 'login.html';
+}
+
+        // Preenche o campo select dinamicamente de 1 a 40
+        const selectNumero = document.getElementById('numero');
+        for (let i = 1; i <= 40; i++) {
+            let option = document.createElement('option');
+            option.value = `Parquímetro ${i}`;
+            option.textContent = `Parquímetro ${i}`;
+            selectNumero.appendChild(option);
+        }
+
+        // Integração com o Back-end
+        document.getElementById('formRelatorio').addEventListener('submit', async function(e) {
+            e.preventDefault();
+
+            const parquimetro = document.getElementById('numero').value;
+            const tipoErro = document.getElementById('tipoErro').value;
+
+            try {
+                const resposta = await fetch('http://localhost:3000/api/ocorrencias', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ parquimetro, tipo_erro: tipoErro })
+                });
+
+                if (resposta.ok) {
+                    alert('Relatório enviado ao banco com sucesso!');
+                    window.location.href = 'ver-relatorios.html';
+                } else {
+                    alert('Erro interno do servidor ao salvar o relatório.');
+                }
+            } catch (erro) {
+                console.error(erro);
+                alert('Não foi possível conectar ao servidor. Certifique-se de que o backend está ligado.');
+            }
+        });
+    </script>
+
+</body>
+</html>

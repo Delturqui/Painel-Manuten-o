@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ocorrências</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            background-color: #f4f4f9;
+            margin: 0;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: #ffffff;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        }
+
+        h1 {
+            color: #333333;
+            margin-bottom: 20px;
+            font-size: 24px;
+            text-align: center;
+        }
+
+        .relatorio-card {
+            background: #fafafa;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+        }
+
+        .relatorio-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+            border-bottom: 1px solid #eee;
+            padding-bottom: 8px;
+        }
+
+        .relatorio-info span {
+            font-weight: bold;
+            color: #007bff;
+        }
+
+        .status {
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+        }
+
+        .status.aberto {
+            background-color: #ffc107;
+            color: #856404;
+        }
+
+        .status.resolvido {
+            background-color: #28a745;
+            color: white;
+        }
+
+        .relatorio-body p {
+            margin: 6px 0;
+        }
+
+        .btn-baixa {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 8px 12px;
+            font-size: 14px;
+            font-weight: bold;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-top: 10px;
+            transition: background-color 0.2s;
+        }
+
+        .btn-baixa:hover {
+            background-color: #218838;
+        }
+
+        .back-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+        }
+        .back-link:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1>Relatórios Enviados</h1>
+        
+        <!-- Local onde os cartões de ocorrências do banco de dados serão injetados -->
+        <div id="listaOcorrencias"></div>
+
+        <a href="index.html" class="back-link">Voltar ao Painel Inicial</a>
+    </div>
+
+    <script>
+        if (!localStorage.getItem('usuarioLogado')) {
+        window.location.href = 'login.html';
+}
+
+        // Carrega os dados assim que o usuário abre a página
+        window.addEventListener('DOMContentLoaded', carregarOcorrencias);
+
+        async function carregarOcorrencias() {
+            const container = document.getElementById('listaOcorrencias');
+            
+            try {
+                const resposta = await fetch('http://localhost:3000/api/ocorrencias');
+                const ocorrencias = await resposta.json();
+
+                if (ocorrencias.length === 0) {
+                    container.innerHTML = '<p style="text-align:center; color:#666;">Nenhuma ocorrência registrada no banco.</p>';
+                    return;
+                }
+
+                container.innerHTML = ''; // Limpa a tela antes de renderizar
+
+                ocorrencias.forEach(item => {
+                    const dataFormatada = new Date(item.data_criacao).toLocaleString('pt-BR');
+                    const statusClass = item.status === 'Pendente' ? 'status aberto' : 'status resolvido';
+
+                    // Criação segura do elemento do card
+                    const card = document.createElement('div');
+                    card.className = 'relatorio-card';
+
+                    // Injeta a estrutura básica de texto
+                    card.innerHTML = `
+                        <div class="relatorio-header">
+                            <div class="relatorio-info"><span>${item.parquimetro}</span></div>
+                            <span class="${statusClass}">${item.status}</span>
+                        </div>
+                        <div class="relatorio-body">
+                            <p><strong>Código / Erro:</strong> ${item.tipo_erro}</p>
+                            <p style="font-size:13px; color:#777;"><strong>Data/Hora:</strong> ${dataFormatada}</p>
+                        </div>
+                    `;
+
+                    // Cria o botão de forma isolada se o status for Pendente para não quebrar o ID
+                    if (item.status === 'Pendente') {
+                        const botao = document.createElement('button');
+                        botao.className = 'btn-baixa';
+                        botao.textContent = 'Dar Baixa na Ocorrência';
+                        
+                        // Vincula o ID diretamente ao evento de clique de forma segura
+                        botao.addEventListener('click', () => darBaixa(item.id));
+                        
+                        card.querySelector('.relatorio-body').appendChild(botao);
+                    }
+
+                    container.appendChild(card);
+                });
+            } catch (erro) {
+                console.error(erro);
+                container.innerHTML = '<p style="text-align:center; color:red;">Erro ao conectar com o banco de dados.</p>';
+            }
+        }
+
+        // Função do botão que executa o UPDATE no banco de dados
+        async function darBaixa(id) {
+            if (!confirm('Deseja realmente dar baixa e encerrar essa ocorrência?')) return;
+
+            try {
+                const resposta = await fetch(`http://localhost:3000/api/ocorrencias/${id}/concluir`, {
+                    method: 'PUT'
+                });
+
+                if (resposta.ok) {
+                    alert('Ocorrência atualizada para Concluída no PostgreSQL!');
+                    carregarOcorrencias(); // Recarrega a lista na tela de forma limpa
+                } else {
+                    alert('Erro ao processar a baixa no servidor.');
+                }
+            } catch (erro) {
+                console.error(erro);
+                alert('Erro na comunicação com o backend.');
+            }
+        }
+    </script>
+</body>
+</html>
